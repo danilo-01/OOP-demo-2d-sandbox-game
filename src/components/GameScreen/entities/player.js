@@ -1,9 +1,17 @@
+import idlePlayerSprite from "../../../assets/3 Cyborg/Cyborg_idle.png";
+import idleLeftPlayerSprite from "../../../assets/3 Cyborg/Cyborg_idle_left.png";
+import runPlayerSprite from "../../../assets/3 Cyborg/Cyborg_run.png";
+import runLeftPlayerSprite from "../../../assets/3 Cyborg/Cyborg_run_left.png";
+import jumpPlayerSprite from "../../../assets/3 Cyborg/Cyborg_jump.png";
+import jumpLeftPlayerSprite from "../../../assets/3 Cyborg/Cyborg_jump_left.png";
+
+import { createImage } from "../helpers/createImage";
 import { applyGravity } from "../helpers/applyGravity";
 import movementActions from "../helpers/movementActions";
-const { STILL, LEFT, RIGHT, JUMP } = movementActions;
+const { STILL, LEFT, RIGHT, JUMP, RUNNING } = movementActions;
 
 export default class Player {
-  constructor({ ctx, environment, x = 0, y = 0, imageUrl }) {
+  constructor({ ctx, environment, x = 0, y = 0 }) {
     //   Canvas context
     this.ctx = ctx;
 
@@ -18,8 +26,8 @@ export default class Player {
 
     // Player dimensions
     this.dimensions = {
-      height: 30,
-      width: 30,
+      height: 80,
+      width: 100,
     };
 
     // Player velocity
@@ -29,18 +37,14 @@ export default class Player {
     };
 
     // Player speeds
-    this.speeds = {
-      walking: 1.5,
-      running: 3,
-    };
+    this.speed = 2.2;
 
     // Movement status (STILL, LEFT, RIGHT, JUMP)
     this.actions = {
       left: false,
       right: false,
       still: true,
-      jump: false,
-      running: false,
+      jumping: false,
       lastPressedHorizontal: null,
     };
 
@@ -50,23 +54,69 @@ export default class Player {
     // On surface
     this.onSurface = false;
 
-    // Set images
-    const image = new Image();
-    image.src = imageUrl;
-    this.image = image;
+    // Player sprites
+    this.sprites = {
+      idle: {
+        rightSprite: createImage(idlePlayerSprite),
+        leftSprite: createImage(idleLeftPlayerSprite),
+        frames: 4,
+      },
+      run: {
+        rightSprite: createImage(runPlayerSprite),
+        leftSprite: createImage(runLeftPlayerSprite),
+        frames: 6,
+      },
+      jump: {
+        rightSprite: createImage(jumpPlayerSprite),
+        leftSprite: createImage(jumpLeftPlayerSprite),
+        frames: 4,
+      },
+      frame: 0,
+    };
   }
 
   draw() {
-    this.ctx.translate(this.dimensions.width, 0);
-    this.ctx.scale(-1, 1);
+    // Set sprite quality
+    this.ctx.imageSmoothingEnabled = false;
+    this.ctx.imageSmoothingQuality = "high";
+
+    // Set which sprite set to use based on current action
+    let spriteToUse;
+    switch (determinePlayerAction(this)) {
+      case STILL:
+        spriteToUse = this.sprites.idle;
+        break;
+      case RUNNING:
+        spriteToUse = this.sprites.run;
+        break;
+      case JUMP:
+        spriteToUse = this.sprites.jump;
+        break;
+    }
+
+    const facingLeft = this.actions.lastPressedHorizontal === LEFT;
 
     this.ctx.drawImage(
-      this.image,
+      facingLeft ? spriteToUse.leftSprite : spriteToUse.rightSprite,
+      facingLeft ? 48 * this.sprites.frame : 48 * this.sprites.frame,
+      0,
+      48,
+      60,
       this.position.x,
       this.position.y,
       this.dimensions.width,
       this.dimensions.height
     );
+
+    // Sprite loop throttle
+    if (--this.environment.onFrame === 0) {
+      // Update sprite frame
+      this.sprites.frame++;
+      this.environment.onFrame = this.environment.frameLimit;
+    }
+    if (this.sprites.frame >= spriteToUse.frames) {
+      this.sprites.frame = 0;
+    }
   }
 
   update() {
@@ -99,6 +149,8 @@ export default class Player {
         break;
       case " ":
         if (this.jumped < 2 && !keyup) applyPlayerJump(this);
+        this.actions.still = false;
+        this.actions.jumping = true;
 
         break;
       case "Shift":
@@ -109,9 +161,11 @@ export default class Player {
 
   resetOnPlaced() {
     //   Reset velocity
+    this.actions.still = true;
     this.onSurface = true;
     this.velocity.y = 0;
-    this.jumped = false;
+    this.actions.jumping = false;
+    this.jumped = 0;
   }
 }
 
@@ -119,7 +173,7 @@ const applyPlayerMovementHorizontal = (object, environment, action) => {
   const { left: movingLeft, right: movingRight, running } = object.actions;
 
   // Apply speed based on action
-  object.velocity.x += running ? object.speeds.running : object.speeds.walking;
+  object.velocity.x += object.speed;
 
   // Moving left
   if (
@@ -151,4 +205,15 @@ const applyPlayerJump = (object, environment) => {
 const applyMovementModifier = (object, environment) => {
   // Horizontal movement
   applyPlayerMovementHorizontal(object);
+};
+
+const determinePlayerAction = (object) => {
+  console.log(object.actions);
+  if (object.actions.jumping) return JUMP;
+
+  if (object.actions.left || object.actions.right) return RUNNING;
+
+  if (object.actions.still) return STILL;
+
+  return STILL;
 };
