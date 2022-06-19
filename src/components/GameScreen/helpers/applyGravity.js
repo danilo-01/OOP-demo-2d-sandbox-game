@@ -4,12 +4,12 @@ export const applyGravity = (object, environment) => {
     //   Update objects position
     object.position.y += object.velocity.y;
 
-    if (object.position.y + object.dimensions.height <= environment.floor) {
+    if (object.position.y + object.dimensions.height <= environment.height) {
       //   Apply velocity
       object.onSurface = false;
-      object.velocity.y += 0.1;
+      object.velocity.y += 0.15;
     } else {
-      object.position.y = environment.floor - object.dimensions.height;
+      object.position.y = environment.height - object.dimensions.height;
       object.resetOnPlaced();
     }
   }

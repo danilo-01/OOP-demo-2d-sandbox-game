@@ -26,8 +26,8 @@ export default class Player {
 
     // Player dimensions
     this.dimensions = {
-      height: 80,
-      width: 100,
+      height: 100,
+      width: 150,
     };
 
     // Player velocity
@@ -101,7 +101,7 @@ export default class Player {
       facingLeft ? 48 * this.sprites.frame : 48 * this.sprites.frame,
       0,
       48,
-      60,
+      48,
       this.position.x,
       this.position.y,
       this.dimensions.width,
@@ -175,20 +175,27 @@ const applyPlayerMovementHorizontal = (object, environment, action) => {
   // Apply speed based on action
   object.velocity.x += object.speed;
 
-  // Moving left
   if (
-    (movingLeft && object.actions.lastPressedHorizontal === LEFT) ||
-    (movingLeft && !movingRight)
+    // Moving left
+    ((movingLeft && object.actions.lastPressedHorizontal === LEFT) ||
+      (movingLeft && !movingRight)) &&
+    object.position.x >= 2
   ) {
-    object.position.x -= object.velocity.x;
-  }
-
-  // Moving right
-  if (
-    (movingRight && object.actions.lastPressedHorizontal === RIGHT) ||
-    (movingRight && !movingLeft)
+    object.position.x -= Math.floor(object.velocity.x);
+  } else if (
+    // Moving right
+    ((movingRight && object.actions.lastPressedHorizontal === RIGHT) ||
+      (movingRight && !movingLeft)) &&
+    object.position.x <= 250
   ) {
-    object.position.x += object.velocity.x;
+    object.position.x += Math.floor(object.velocity.x);
+  } else {
+    if (movingLeft && object.actions.lastPressedHorizontal === LEFT) {
+      environment.updateOffset(1, LEFT);
+    }
+    if (movingRight && object.actions.lastPressedHorizontal === RIGHT) {
+      environment.updateOffset(1, RIGHT);
+    }
   }
 
   // Reset velocity on x position
@@ -199,16 +206,15 @@ const applyPlayerJump = (object, environment) => {
   object.onSurface = false;
   object.jumped++;
   object.velocity.y = 0;
-  object.velocity.y -= 3;
+  object.velocity.y -= 5;
 };
 
 const applyMovementModifier = (object, environment) => {
   // Horizontal movement
-  applyPlayerMovementHorizontal(object);
+  applyPlayerMovementHorizontal(object, environment);
 };
 
 const determinePlayerAction = (object) => {
-  console.log(object.actions);
   if (object.actions.jumping) return JUMP;
 
   if (object.actions.left || object.actions.right) return RUNNING;

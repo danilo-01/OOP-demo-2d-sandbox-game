@@ -17,7 +17,8 @@ export const init = (ctx, canvas) => {
     y: 30,
   });
 
-  // Background
+  // Coonect player to environment
+  environment.connectPlayer(player);
 
   // Key events
   // key down
@@ -32,6 +33,7 @@ export const init = (ctx, canvas) => {
   const animate = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Update and draw player on screen
+    environment.draw();
     player.update();
     frameCount = 5;
 
