@@ -29,9 +29,15 @@ export default class Environment {
     this.backgrounds = {
       city1: {
         points: [],
-        image: createImage(cityBackground1, 3),
+        image: createImage(cityBackground1),
+      },
+      city2: {
+        points: [],
+        image: createImage(cityBackground2),
       },
     };
+
+    this.currentLevel = null;
   }
 
   draw() {
@@ -48,7 +54,11 @@ export default class Environment {
       this.height
     );
 
-    this.drawBackground(this.backgrounds.city1);
+    // Draw city backgrounds
+    this.drawBackground(this.backgrounds.city1, 9);
+    this.drawBackground(this.backgrounds.city2, 7);
+
+    this.generateLevel();
   }
 
   update() {
@@ -61,21 +71,15 @@ export default class Environment {
       direction === RIGHT ? this.offset + value + 10 : this.offset - value - 10;
   }
 
-  drawBackground(background, offsetModifier = 1) {
-    let viewArea = this.width + this.offset;
+  drawBackground(background, offsetModifier) {
+    const currentOffset = this.offset / offsetModifier;
 
     // Loop over points and see which ones need to be removed and added
     let pointsOutOfRange = 0;
-    const minStart = this.offset - this.width;
-    const maxEnd = this.offset + this.width * 2;
-    console.log(minStart, maxEnd);
+    const minStart = currentOffset - this.width;
+    const maxEnd = currentOffset + this.width * 2;
 
-    // for (let point of background.points) {
-    //   if (point.end <= minStart && point.start >= maxEnd) {
-    //     pointsOutOfRange++;
-    //   }
-    // }
-
+    // Check if first or last background image is doesnt need to be rendered
     if (background.points.length !== 0) {
       if (background.points[0].end < minStart) {
         pointsOutOfRange++;
@@ -86,6 +90,7 @@ export default class Environment {
       }
     }
 
+    // If an image is out of the render distance reset the current images
     if (pointsOutOfRange || background.points.length === 0) {
       background.points = [];
 
@@ -97,23 +102,22 @@ export default class Environment {
 
       // Center image
       background.points.push({
-        start: this.offset,
-        end: this.offset + this.width,
+        start: currentOffset,
+        end: currentOffset + this.width,
       });
 
       // Far right image
       background.points.push({
-        start: this.offset + this.width,
+        start: currentOffset + this.width,
         end: maxEnd,
       });
-      console.log("resetting points", background.points);
     }
 
     // Loop over available backgrounds and draw them
     for (let point of background.points) {
       this.ctx.drawImage(
         background.image,
-        (point.start - this.offset) / offsetModifier,
+        point.start - currentOffset,
         0,
         this.width,
         this.height
@@ -123,5 +127,9 @@ export default class Environment {
 
   connectPlayer(player) {
     this.player = player;
+  }
+
+  generateLevel() {
+    const currentLevel = this.currentLevel;
   }
 }
